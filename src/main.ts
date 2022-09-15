@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import GUI from "lil-gui";
 import * as CANNON from "cannon-es";
-import { Vector3 } from "three";
+import { Quaternion, Vector3 } from "three";
 import pxTexture from "./textures/environmentMaps/0/px.png";
 import nxTexture from "./textures/environmentMaps/0/nx.png";
 import pyTexture from "./textures/environmentMaps/0/py.png";
@@ -147,7 +147,8 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
  */
 const objectsToUpdate: { mesh: THREE.Mesh; body: CANNON.Body }[] = [];
 const sphereGeometry = new THREE.SphereGeometry(1, 20, 20);
-const sphereMaterial = new THREE.MeshStandardMaterial({
+const cubeGeometry = new THREE.BoxGeometry(1, 1, 1);
+const meshStandardMaterial = new THREE.MeshStandardMaterial({
   metalness: 0.1,
   roughness: 0.7,
   envMap: environmentMapTexture,
@@ -156,7 +157,7 @@ const createSphere = (
   radius: number,
   position: Vector3 | Vec3 | { x: number; y: number; z: number }
 ) => {
-  const mesh = new THREE.Mesh(sphereGeometry, sphereMaterial);
+  const mesh = new THREE.Mesh(sphereGeometry, meshStandardMaterial);
   mesh.scale.set(radius, radius, radius);
   mesh.castShadow = true;
   mesh.position.copy(position as Vector3);
@@ -173,6 +174,35 @@ const createSphere = (
   objectsToUpdate.push({ mesh, body });
 };
 
+const createCube = (
+  size: {
+    width: number;
+    height: number;
+    depth: number;
+  },
+  position: Vector3 | Vec3 | { x: number; y: number; z: number }
+) => {
+  const mesh = new THREE.Mesh(cubeGeometry, meshStandardMaterial);
+  mesh.scale.set(size.width, size.height, size.depth);
+  mesh.castShadow = true;
+  mesh.position.copy(position as Vector3);
+  scene.add(mesh);
+
+  const shape = new CANNON.Box(
+    new Vec3(size.width / 2, size.height / 2, size.depth / 2)
+  );
+  const body = new CANNON.Body({
+    mass: 1,
+    position: position as Vec3,
+    shape,
+  });
+
+  world.addBody(body);
+  objectsToUpdate.push({ mesh, body });
+};
+
+createCube({ width: 0.5, height: 0.7, depth: 0.3 }, { x: 0, y: 3, z: 1 });
+
 createSphere(0.5, { x: 0, y: 3, z: 0 });
 createSphere(0.8, { x: 1, y: 4, z: 2 });
 
@@ -187,12 +217,13 @@ const tick = () => {
   const deltaTime = elapsedTime - lastElapsedTime;
   lastElapsedTime = elapsedTime;
 
-  // sphereBody.applyForce(new CANNON.Vec3(-0.5, 0, 0), sphereBody.position);
   world.step(1 / 60, deltaTime, 3);
   objectsToUpdate.forEach((object) => {
-    object.mesh.position.copy(object.body.position);
+    object.mesh.position.copy(object.body.position as unknown as Vector3);
+    object.mesh.quaternion.copy(
+      object.body.quaternion as unknown as Quaternion
+    );
   });
-  // sphere.position.copy(sphereBody.position as unknown as Vector3);
 
   // Update controls
   controls.update();
@@ -212,11 +243,26 @@ tick();
 const gui = new GUI();
 const parameters = {
   createSphere() {
-    createSphere(Math.random() * 0.5, {
+    createSphere(Math.random() / 2, {
       x: (Math.random() - 0.5) * 3,
       y: 3,
       z: (Math.random() - 0.5) * 3,
     });
   },
+  createCube() {
+    createCube(
+      {
+        width: Math.random(),
+        height: Math.random(),
+        depth: Math.random(),
+      },
+      {
+        x: (Math.random() - 0.5) * 3,
+        y: 3,
+        z: (Math.random() - 0.5) * 3,
+      }
+    );
+  },
 };
 gui.add(parameters, "createSphere");
+gui.add(parameters, "createCube");
