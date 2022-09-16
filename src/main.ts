@@ -7,7 +7,11 @@ import { Quaternion, Vector3 } from "three";
 import pxTexture from "./textures/environmentMaps/0/px.png";
 import nxTexture from "./textures/environmentMaps/0/nx.png";
 import pyTexture from "./textures/environmentMaps/0/py.png";
-import { Vec3 } from "cannon-es";
+import nyTexture from "./textures/environmentMaps/0/ny.png";
+import pzTexture from "./textures/environmentMaps/0/pz.png";
+import nzTexture from "./textures/environmentMaps/0/nz.png";
+import { CollisionType, ContactEquation, Vec3 } from "cannon-es";
+import hitSound from "./sounds/hit.mp3";
 
 /**
  * Base
@@ -25,19 +29,35 @@ const textureLoader = new THREE.TextureLoader();
 const cubeTextureLoader = new THREE.CubeTextureLoader();
 
 const environmentMapTexture = cubeTextureLoader.load([
-  "/textures/environmentMaps/0/px.png",
-  "/textures/environmentMaps/0/nx.png",
-  "/textures/environmentMaps/0/py.png",
-  "/textures/environmentMaps/0/ny.png",
-  "/textures/environmentMaps/0/pz.png",
-  "/textures/environmentMaps/0/nz.png",
+  pxTexture,
+  nxTexture,
+  pyTexture,
+  nyTexture,
+  pzTexture,
+  nzTexture,
 ]);
+
+/*
+ * Sounds
+ */
+const sound = new Audio(hitSound);
+
+const playHitSound = (event: { contact: ContactEquation }) => {
+  if (event.contact.getImpactVelocityAlongNormal() < 1.5) {
+    return;
+  }
+
+  sound.currentTime = 0;
+  sound.volume = Math.random();
+  sound.play();
+};
 
 /*
  * Physics
  */
-const world = new CANNON.World();
+const world = new CANNON.World({ allowSleep: true });
 world.gravity.set(0, -9.82, 0);
+world.broadphase = new CANNON.SAPBroadphase(world);
 
 const defaultMaterial = new CANNON.Material("default");
 const defaultContactMaterial = new CANNON.ContactMaterial(
@@ -149,8 +169,8 @@ const objectsToUpdate: { mesh: THREE.Mesh; body: CANNON.Body }[] = [];
 const sphereGeometry = new THREE.SphereGeometry(1, 20, 20);
 const cubeGeometry = new THREE.BoxGeometry(1, 1, 1);
 const meshStandardMaterial = new THREE.MeshStandardMaterial({
-  metalness: 0.1,
-  roughness: 0.7,
+  metalness: 0.5,
+  roughness: 0.4,
   envMap: environmentMapTexture,
 });
 const createSphere = (
@@ -170,6 +190,7 @@ const createSphere = (
     shape,
   });
 
+  body.addEventListener("collide", playHitSound);
   world.addBody(body);
   objectsToUpdate.push({ mesh, body });
 };
@@ -197,6 +218,7 @@ const createCube = (
     shape,
   });
 
+  body.addEventListener("collide", playHitSound);
   world.addBody(body);
   objectsToUpdate.push({ mesh, body });
 };
