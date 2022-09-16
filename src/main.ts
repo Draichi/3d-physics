@@ -10,7 +10,7 @@ import pyTexture from "./textures/environmentMaps/0/py.png";
 import nyTexture from "./textures/environmentMaps/0/ny.png";
 import pzTexture from "./textures/environmentMaps/0/pz.png";
 import nzTexture from "./textures/environmentMaps/0/nz.png";
-import { CollisionType, ContactEquation, Vec3 } from "cannon-es";
+import { ContactEquation, Vec3 } from "cannon-es";
 import hitSound from "./sounds/hit.mp3";
 
 /**
@@ -25,7 +25,6 @@ const scene = new THREE.Scene();
 /**
  * Textures
  */
-const textureLoader = new THREE.TextureLoader();
 const cubeTextureLoader = new THREE.CubeTextureLoader();
 
 const environmentMapTexture = cubeTextureLoader.load([
