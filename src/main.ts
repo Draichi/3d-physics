@@ -69,7 +69,7 @@ const defaultContactMaterial = new CANNON.ContactMaterial(
 );
 world.defaultContactMaterial = defaultContactMaterial;
 
-const floorShape = new CANNON.Plane();
+const floorShape = new CANNON.Box(new CANNON.Vec3(5, 5, 0.1));
 const floorBody = new CANNON.Body({
   mass: 0,
   shape: floorShape,
@@ -222,6 +222,15 @@ const createCube = (
   objectsToUpdate.push({ mesh, body });
 };
 
+const reset = () => {
+  objectsToUpdate.forEach((object) => {
+    object.body.removeEventListener("collide", playHitSound);
+    world.removeBody(object.body);
+    scene.remove(object.mesh);
+  });
+  objectsToUpdate.splice(0, objectsToUpdate.length);
+};
+
 createCube({ width: 0.5, height: 0.7, depth: 0.3 }, { x: 0, y: 3, z: 1 });
 
 createSphere(0.5, { x: 0, y: 3, z: 0 });
@@ -284,6 +293,10 @@ const parameters = {
       }
     );
   },
+  reset() {
+    reset();
+  },
 };
 gui.add(parameters, "createSphere");
 gui.add(parameters, "createCube");
+gui.add(parameters, "reset");
